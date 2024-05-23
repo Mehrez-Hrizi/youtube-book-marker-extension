@@ -9,13 +9,15 @@
     if (type === "NEW") {
       currentVideo = videoId;
       newVideoLoaded();
+    } else if (type === "PLAY") {
+      youtubePlayer.currentTime = value;
     }
   });
 
   const fetchBookmarks = () => {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([currentVideo], obj => {
-        resolve(obj[currentVideo] ? JSON.parse(obj[currentVideo]) : [])
+      chrome.storage.sync.get([currentVideo], (obj) => {
+        resolve(obj[currentVideo] ? JSON.parse(obj[currentVideo]) : []);
       });
     });
   };
@@ -37,7 +39,10 @@
         document.getElementsByClassName("ytp-right-controls")[0];
       youtubePlayer = document.getElementsByClassName("video-stream")[0];
 
-      youtubeRightControls.insertBefore(bookmarkBtn, youtubeRightControls.firstChild);
+      youtubeRightControls.insertBefore(
+        bookmarkBtn,
+        youtubeRightControls.firstChild
+      );
       bookmarkBtn.addEventListener("click", addNewBookmarkEventHandler);
     }
   };
@@ -51,11 +56,18 @@
 
     currentVideoBookmarks = await fetchBookmarks();
 
-    chrome.storage.sync.set({
-      [currentVideo]: JSON.stringify(
-        [...currentVideoBookmarks, newBookmark].sort((a, b) => a.time - b.time)
-      ),
-    });
+    const isDuplicate = currentVideoBookmarks.some(
+      (bookmark) => getTime(bookmark.time) === getTime(newBookmark.time)
+    );
+
+    if (!isDuplicate) {
+      chrome.storage.sync.set({
+        [currentVideo]: JSON.stringify(
+          [...currentVideoBookmarks, newBookmark]
+            .sort((a, b) => a.time - b.time)
+        ),
+      });
+    }
   };
 
   newVideoLoaded();
